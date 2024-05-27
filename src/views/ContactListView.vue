@@ -1,6 +1,7 @@
 <template>
   <div class="container">
     <h1>Contact List</h1>
+    <button class="add-contact-btn" @click="goToAddContact">Add Contact</button>
     <table class="contact-table">
       <thead>
         <tr>
@@ -10,7 +11,7 @@
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody v-if="contacts.length">
         <tr v-for="contact in contacts" :key="contact.id">
           <td>{{ contact.name }}</td>
           <td>{{ contact.email }}</td>
@@ -28,21 +29,49 @@
           </td>
         </tr>
       </tbody>
+      <tbody v-else>
+        <tr>
+          <td colspan="4">No contacts found.</td>
+        </tr>
+      </tbody>
     </table>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import axios from "axios";
 
 const router = useRouter();
 
 const contacts = ref([]); // Assume you fetch contacts from API or store
 
-function deleteContact(id) {
-  // Implement delete functionality
+async function fetchContacts() {
+  try {
+    const response = await axios.get("your-api-endpoint/contacts");
+    contacts.value = response.data.contacts;
+  } catch (error) {
+    console.error("Error fetching contacts:", error);
+  }
 }
+
+async function deleteContact(id) {
+  try {
+    await axios.delete(`your-api-endpoint/contacts/${id}`);
+    contacts.value = contacts.value.filter((contact) => contact.id !== id);
+  } catch (error) {
+    console.error("Error deleting contact:", error);
+  }
+}
+
+function goToAddContact() {
+  router.push({ name: "add-contact" });
+}
+
+onMounted(() => {
+  fetchContacts();
+});
 </script>
 
 <style scoped>
@@ -51,14 +80,30 @@ function deleteContact(id) {
   margin: 0 auto;
 }
 
+.add-contact-btn {
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.add-contact-btn:hover {
+  background-color: #0056b3;
+}
+
 .contact-table {
   width: 100%;
+  border-collapse: collapse;
 }
 
 .contact-table th,
 .contact-table td {
-  padding: 10px;
+  padding: 12px;
   text-align: left;
+  border-bottom: 1px solid #ddd;
 }
 
 .contact-table th {
@@ -66,6 +111,10 @@ function deleteContact(id) {
 }
 
 .contact-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.contact-table tbody tr:hover {
   background-color: #f2f2f2;
 }
 </style>
