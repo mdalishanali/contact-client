@@ -66,7 +66,7 @@ async function deleteContact(id) {
 }
 
 function goToAddContact() {
-  router.push({ name: "add-contact" });
+  router.push({ name: "AddContact" });
 }
 
 function editContact(id) {

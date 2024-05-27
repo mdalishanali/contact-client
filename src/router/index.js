@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import ContactListView from "../views/ContactListView.vue";
 import EditContactView from "../views/EditContactView.vue";
 import ViewContactView from "../views/ViewContactView.vue";
+import AddContactView from "@/views/AddContactView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -10,6 +11,11 @@ const router = createRouter({
       path: "/",
       name: "home",
       component: ContactListView,
+    },
+    {
+      path: "/add",
+      name: "AddContact",
+      component: AddContactView,
     },
     {
       path: "/edit/:id",
