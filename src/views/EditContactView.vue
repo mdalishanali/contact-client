@@ -1,66 +1,121 @@
 <template>
-    <div class="container">
-      <h1>Contact List</h1>
-      <table class="contact-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="contact in contacts" :key="contact.id">
-            <td>{{ contact.name }}</td>
-            <td>{{ contact.email }}</td>
-            <td>{{ contact.phone }}</td>
-            <td>
-              <router-link :to="{ name: 'view-contact', params: { id: contact.id } }">View</router-link>
-              <router-link :to="{ name: 'edit-contact', params: { id: contact.id } }">Edit</router-link>
-              <button @click="deleteContact(contact.id)">Delete</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </template>
-  
-  <script setup>
-  import { ref } from 'vue';
-  import { useRouter } from 'vue-router';
-  
-  const router = useRouter();
-  
-  const contacts = ref([]); // Assume you fetch contacts from API or store
-  
-  function deleteContact(id) {
-    // Implement delete functionality
+  <div class="container">
+    <h1>Edit Contact</h1>
+
+    <!-- Loader -->
+    <div v-if="isLoading" class="loader"></div>
+
+    <!-- Edit form -->
+    <form v-if="!isLoading && editedContact" @submit.prevent="saveContact">
+      <div class="form-group">
+        <label for="name">Name:</label>
+        <input type="text" id="name" v-model="editedContact.name" required />
+      </div>
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" id="email" v-model="editedContact.email" required />
+      </div>
+      <div class="form-group">
+        <label for="phone">Phone:</label>
+        <input type="text" id="phone" v-model="editedContact.phone" required />
+      </div>
+      <button type="submit">Update</button>
+    </form>
+  </div>
+</template>
+
+<script setup>
+import { api } from "@/utils/api";
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+const editedContact = ref(null);
+const isLoading = ref(false);
+const contactId = ref(null);
+
+// Fetch contact data when component is mounted
+onMounted(() => {
+  const paramId = router.currentRoute.value.params.id;
+  fetchContactDetails(paramId);
+  contactId.value = paramId;
+});
+
+// Fetch contact details from API
+async function fetchContactDetails(contactId) {
+  isLoading.value = true;
+  try {
+    const response = await api.get(`/api/contacts/${contactId}`);
+    editedContact.value = response.data.contact;
+  } catch (error) {
+    console.error("Error fetching contact details:", error);
+  } finally {
+    isLoading.value = false;
   }
-  </script>
-  
-  <style scoped>
-  .container {
-    max-width: 800px;
-    margin: 0 auto;
+}
+
+// Save updated contact details
+async function saveContact() {
+  isLoading.value = true;
+  try {
+    const response = await api.put(`/api/contacts/${contactId}`, editedContact.value);
+    editedContact.value = response.data.contact;
+  } catch (error) {
+    console.error("Error updating contact details:", error);
+  } finally {
+    isLoading.value = false;
   }
-  
-  .contact-table {
-    width: 100%;
-  }
-  
-  .contact-table th,
-  .contact-table td {
-    padding: 10px;
-    text-align: left;
-  }
-  
-  .contact-table th {
-    background-color: #f2f2f2;
-  }
-  
-  .contact-table tbody tr:nth-child(even) {
-    background-color: #f2f2f2;
-  }
-  </style>
-  
+}
+</script>
+
+<style scoped>
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.loader {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 50px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+</style>
