@@ -13,7 +13,7 @@ const router = createRouter({
     },
     {
       path: "/edit/:id",
-      name: "Edit",
+      name: "edit-contact",
       component: EditContactView,
     },
     {
