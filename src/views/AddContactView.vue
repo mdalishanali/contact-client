@@ -10,31 +10,70 @@
       <div class="form-group">
         <label for="name">Name:</label>
         <input type="text" id="name" v-model="newContact.name" required />
+        <span v-if="!validations.name" class="error">Name is required</span>
       </div>
       <div class="form-group">
         <label for="email">Email:</label>
         <input type="email" id="email" v-model="newContact.email" required />
+        <span v-if="!validations.email" class="error"
+          >Invalid email format</span
+        >
       </div>
       <div class="form-group">
         <label for="phone">Phone:</label>
         <input type="text" id="phone" v-model="newContact.phone" required />
+        <span v-if="!validations.phone" class="error"
+          >Invalid phone format</span
+        >
       </div>
-      <button type="submit">Add</button>
+      <button type="submit" :disabled="!isFormValid">Add</button>
     </form>
   </div>
 </template>
 
 <script setup>
-import { api } from "@/utils/api";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
+import { api } from "@/utils/api";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 const router = useRouter();
 const newContact = ref({ name: "", email: "", phone: "" });
 const isLoading = ref(false);
 
+// Email validation function
+function isValidEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
+// Phone validation function using libphonenumber-js
+function isValidPhone(phone) {
+  try {
+    const phoneNumber = parsePhoneNumberFromString(phone);
+    return phoneNumber?.isValid() ?? false;
+  } catch {
+    return false;
+  }
+}
+
+// Computed properties for validation state
+const validations = computed(() => ({
+  name: newContact.value.name.trim().length > 0,
+  email: isValidEmail(newContact.value.email),
+  phone: isValidPhone(newContact.value.phone),
+}));
+
+// Check if the form is valid
+const isFormValid = computed(
+  () =>
+    validations.value.name && validations.value.email && validations.value.phone
+);
+
 // Save new contact details
 async function saveContact() {
+  if (!isFormValid.value) return;
+
   isLoading.value = true;
   try {
     await api.post(`/api/contacts`, newContact.value);
@@ -98,7 +137,17 @@ button {
   transition: background-color 0.3s ease;
 }
 
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
 button:hover {
   background-color: #0056b3;
+}
+
+.error {
+  color: red;
+  font-size: 12px;
 }
 </style>

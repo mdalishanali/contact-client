@@ -10,24 +10,28 @@
       <div class="form-group">
         <label for="name">Name:</label>
         <input type="text" id="name" v-model="editedContact.name" required />
+        <span v-if="!validations.name" class="error">Name is required</span>
       </div>
       <div class="form-group">
         <label for="email">Email:</label>
         <input type="email" id="email" v-model="editedContact.email" required />
+        <span v-if="!validations.email" class="error">Invalid email format</span>
       </div>
       <div class="form-group">
         <label for="phone">Phone:</label>
         <input type="text" id="phone" v-model="editedContact.phone" required />
+        <span v-if="!validations.phone" class="error">Invalid phone format</span>
       </div>
-      <button type="submit">Update</button>
+      <button type="submit" :disabled="!isFormValid">Update</button>
     </form>
   </div>
 </template>
 
 <script setup>
 import { api } from "@/utils/api";
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
 const router = useRouter();
 const editedContact = ref(null);
@@ -54,12 +58,43 @@ async function fetchContactDetails(contactId) {
   }
 }
 
+// Email validation function
+function isValidEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
+// Phone validation function using libphonenumber-js
+function isValidPhone(phone) {
+  try {
+    const phoneNumber = parsePhoneNumberFromString(phone);
+    return phoneNumber?.isValid() ?? false;
+  } catch {
+    return false;
+  }
+}
+
+// Computed properties for validation state
+const validations = computed(() => ({
+  name: editedContact.value?.name.trim().length > 0,
+  email: isValidEmail(editedContact.value?.email),
+  phone: isValidPhone(editedContact.value?.phone),
+}));
+
+// Check if the form is valid
+const isFormValid = computed(() => 
+  validations.value.name && validations.value.email && validations.value.phone
+);
+
 // Save updated contact details
 async function saveContact() {
+  if (!isFormValid.value) return;
+
   isLoading.value = true;
   try {
-    const response = await api.put(`/api/contacts/${contactId}`, editedContact.value);
+    const response = await api.put(`/api/contacts/${contactId.value}`, editedContact.value);
     editedContact.value = response.data.contact;
+    router.push({ name: 'contact-list' }); // Redirect to contact list after updating contact
   } catch (error) {
     console.error("Error updating contact details:", error);
   } finally {
@@ -115,7 +150,17 @@ button {
   transition: background-color 0.3s ease;
 }
 
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
 button:hover {
   background-color: #0056b3;
+}
+
+.error {
+  color: red;
+  font-size: 12px;
 }
 </style>
